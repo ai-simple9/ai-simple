@@ -1,1 +1,60 @@
-[]
+{
+  "categories": {
+    "greetings": {
+      "keywords": ["привет", "здарова", "салам", "хай", "hello"],
+      "answers": [
+        "Привет.",
+        "Здарова.",
+        "Салам.",
+        "Привет. Пиши нормально."
+      ]
+    },
+    "about_bot": {
+      "keywords": ["кто ты", "что ты", "что умеешь", "умеешь"],
+      "answers": [
+        "Я demo railway bot — локальный чат на Flask.",
+        "Я работаю по базе знаний, памяти, рейтингу и похожим вопросам.",
+        "Я не LLM, но для простого своего бота уже норм."
+      ]
+    },
+    "coding": {
+      "keywords": ["python", "код", "программирование", "сайт", "html", "js", "flask"],
+      "answers": [
+        "Flask + HTML + JS — нормальный старт.",
+        "Хочешь умнее бота — расширяй базу знаний и чисти мусорные пары.",
+        "Без хорошей базы знаний бот будет слабый."
+      ]
+    }
+  },
+  "custom_pairs": [
+    {
+      "id": 1,
+      "question": "как тебя зовут",
+      "answers": ["Меня зовут demo railway bot."],
+      "tags": ["bot", "name"],
+      "rating_up": 0,
+      "rating_down": 0,
+      "is_active": true,
+      "created_at": "2026-04-17 00:00:00",
+      "updated_at": "2026-04-17 00:00:00"
+    },
+    {
+      "id": 2,
+      "question": "что такое python",
+      "answers": [
+        "Python — это язык программирования.",
+        "Python удобен для автоматизации, сайтов и ботов."
+      ],
+      "tags": ["python", "code"],
+      "rating_up": 0,
+      "rating_down": 0,
+      "is_active": true,
+      "created_at": "2026-04-17 00:00:00",
+      "updated_at": "2026-04-17 00:00:00"
+    }
+  ],
+  "last_id": 2,
+  "settings": {
+    "auto_disable_threshold": 3
+  }
+}

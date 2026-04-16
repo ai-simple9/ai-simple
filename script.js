@@ -34,17 +34,11 @@ function scrollBottom() {
 }
 
 function splitLines(text) {
-  return text
-    .split("\n")
-    .map(v => v.trim())
-    .filter(Boolean);
+  return text.split("\n").map(v => v.trim()).filter(Boolean);
 }
 
 function splitTags(text) {
-  return text
-    .split(",")
-    .map(v => v.trim().toLowerCase())
-    .filter(Boolean);
+  return text.split(",").map(v => v.trim().toLowerCase()).filter(Boolean);
 }
 
 function addMessage(text, sender, pairId = null) {
@@ -84,9 +78,7 @@ async function rateAnswer(pairId, vote) {
   try {
     const res = await fetch("/rate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ pair_id: pairId, vote })
     });
 
@@ -111,7 +103,7 @@ async function loadHistory() {
         addMessage(item.bot, "bot", item.pair_id);
       });
     } else {
-      addMessage("Привет. Я demo 0.1.4. Пиши.", "bot");
+      addMessage("Привет. Я demo railway bot. Пиши.", "bot");
     }
   } catch {
     addMessage("Не удалось загрузить историю.", "bot");
@@ -130,9 +122,7 @@ chatForm.addEventListener("submit", async (e) => {
   try {
     const res = await fetch("/chat", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ message })
     });
 
@@ -156,9 +146,7 @@ trainBtn.addEventListener("click", async () => {
   try {
     const res = await fetch("/train", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question, answers, tags })
     });
 
@@ -183,9 +171,7 @@ async function deleteKnowledge(id) {
   try {
     const res = await fetch("/knowledge/delete", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id })
     });
 
@@ -226,9 +212,7 @@ saveEditBtn.addEventListener("click", async () => {
   try {
     const res = await fetch("/knowledge/update", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, question, answers, tags, is_active })
     });
 
@@ -262,13 +246,8 @@ async function loadKnowledge() {
       const item = document.createElement("div");
       item.classList.add("knowledge-item");
 
-      const tagsHtml = (pair.tags || [])
-        .map(tag => `<span class="tag">${tag}</span>`)
-        .join("");
-
-      const answersHtml = (pair.answers || [])
-        .map(answer => `<li>${answer}</li>`)
-        .join("");
+      const tagsHtml = (pair.tags || []).map(tag => `<span class="tag">${tag}</span>`).join("");
+      const answersHtml = (pair.answers || []).map(answer => `<li>${answer}</li>`).join("");
 
       item.innerHTML = `
         <div><strong>#${pair.id}</strong> ${pair.is_active ? "" : '<span class="tag">inactive</span>'}</div>
@@ -318,9 +297,7 @@ importBtn.addEventListener("click", async () => {
 
     const res = await fetch("/knowledge/import", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ custom_pairs: parsed })
     });
 
@@ -335,10 +312,7 @@ importBtn.addEventListener("click", async () => {
 
 backupBtn.addEventListener("click", async () => {
   try {
-    const res = await fetch("/knowledge/backup", {
-      method: "POST"
-    });
-
+    const res = await fetch("/knowledge/backup", { method: "POST" });
     const data = await res.json();
     backupStatus.textContent = data.message || "Backup создан.";
     loadBackups();

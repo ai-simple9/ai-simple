@@ -7,15 +7,16 @@ import shutil
 from datetime import datetime
 from difflib import SequenceMatcher
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+KNOWLEDGE_FILE = os.path.join(BASE_DIR, "knowledge.json")
+MEMORY_FILE = os.path.join(BASE_DIR, "memory.json")
+DIALOG_FILE = os.path.join(BASE_DIR, "dialog_memory.json")
+BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 
-KNOWLEDGE_FILE = "knowledge.json"
-MEMORY_FILE = "memory.json"
-DIALOG_FILE = "dialog_memory.json"
-BACKUP_DIR = "backups"
+app = Flask(__name__, template_folder="templates", static_folder="static")
 
 
-def ensure_files():
+def ensure_dirs():
     os.makedirs(BACKUP_DIR, exist_ok=True)
 
 
@@ -35,12 +36,12 @@ def save_json(filename, data):
 
 
 def backup_knowledge():
-    ensure_files()
+    ensure_dirs()
     if os.path.exists(KNOWLEDGE_FILE):
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         backup_path = os.path.join(BACKUP_DIR, f"knowledge_{ts}.json")
         shutil.copyfile(KNOWLEDGE_FILE, backup_path)
-        return backup_path
+        return os.path.basename(backup_path)
     return None
 
 
@@ -58,13 +59,13 @@ knowledge = load_json(KNOWLEDGE_FILE, {
         "about_bot": {
             "keywords": ["кто ты", "что ты", "что умеешь", "умеешь"],
             "answers": [
-                "Я demo 0.1.4 — локальный чат без API.",
-                "Я работаю по базе знаний, рейтингу, похожим вопросам и памяти.",
-                "Я не LLM, но для локального бота уже норм."
+                "Я demo railway bot — локальный чат на Flask.",
+                "Я работаю по базе знаний, памяти, рейтингу и похожим вопросам.",
+                "Я не LLM, но для простого своего бота уже норм."
             ]
         },
         "coding": {
-            "keywords": ["python", "код", "программирование", "сайт", "html", "js"],
+            "keywords": ["python", "код", "программирование", "сайт", "html", "js", "flask"],
             "answers": [
                 "Flask + HTML + JS — нормальный старт.",
                 "Хочешь умнее бота — расширяй базу знаний и чисти мусорные пары.",
@@ -76,27 +77,27 @@ knowledge = load_json(KNOWLEDGE_FILE, {
         {
             "id": 1,
             "question": "как тебя зовут",
-            "answers": ["Меня зовут demo 0.1.4."],
+            "answers": ["Меня зовут demo railway bot."],
             "tags": ["bot", "name"],
             "rating_up": 0,
             "rating_down": 0,
             "is_active": True,
-            "created_at": "2026-04-16 00:00:00",
-            "updated_at": "2026-04-16 00:00:00"
+            "created_at": "2026-04-17 00:00:00",
+            "updated_at": "2026-04-17 00:00:00"
         },
         {
             "id": 2,
-            "question": "что такое ии",
+            "question": "что такое python",
             "answers": [
-                "ИИ — это система, которая ищет закономерности и строит ответы.",
-                "ИИ — это не магия, а обработка данных и правил."
+                "Python — это язык программирования.",
+                "Python удобен для автоматизации, сайтов и ботов."
             ],
-            "tags": ["ai", "base"],
+            "tags": ["python", "code"],
             "rating_up": 0,
             "rating_down": 0,
             "is_active": True,
-            "created_at": "2026-04-16 00:00:00",
-            "updated_at": "2026-04-16 00:00:00"
+            "created_at": "2026-04-17 00:00:00",
+            "updated_at": "2026-04-17 00:00:00"
         }
     ],
     "last_id": 2,
@@ -109,22 +110,22 @@ memory = load_json(MEMORY_FILE, {})
 dialog_memory = load_json(DIALOG_FILE, [])
 
 
-def normalize(text):
+def normalize(text: str) -> str:
     text = text.lower().strip()
     text = re.sub(r"[^\w\sа-яё]", "", text, flags=re.IGNORECASE)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
 
-def tokenize(text):
+def tokenize(text: str):
     return normalize(text).split()
 
 
-def similarity(a, b):
+def similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, normalize(a), normalize(b)).ratio()
 
 
-def keyword_overlap_score(a, b):
+def keyword_overlap_score(a: str, b: str) -> float:
     words_a = set(tokenize(a))
     words_b = set(tokenize(b))
     if not words_a or not words_b:
@@ -134,10 +135,8 @@ def keyword_overlap_score(a, b):
     return len(common) / len(union)
 
 
-def combined_score(user_text, saved_question):
-    sim_score = similarity(user_text, saved_question)
-    word_score = keyword_overlap_score(user_text, saved_question)
-    return (sim_score * 0.7) + (word_score * 0.3)
+def combined_score(user_text: str, saved_question: str) -> float:
+    return (similarity(user_text, saved_question) * 0.7) + (keyword_overlap_score(user_text, saved_question) * 0.3)
 
 
 def persist_knowledge(with_backup=False):
@@ -154,10 +153,8 @@ def remember_dialog(user_text, bot_text, source_type="fallback", pair_id=None):
         "source_type": source_type,
         "pair_id": pair_id
     })
-
     if len(dialog_memory) > 50:
         del dialog_memory[:-50]
-
     save_json(DIALOG_FILE, dialog_memory)
 
 
@@ -224,13 +221,11 @@ def find_exact_custom_answer(text):
 
 def find_top_similar_pairs(text, threshold=0.42, limit=5):
     scored = []
-
     for pair in get_active_pairs():
         score = combined_score(text, pair.get("question", ""))
         if score >= threshold:
             rating_balance = pair.get("rating_up", 0) - pair.get("rating_down", 0)
             scored.append((score, rating_balance, pair))
-
     scored.sort(key=lambda x: (x[0], x[1], x[2].get("rating_up", 0)), reverse=True)
     return scored[:limit]
 
@@ -238,22 +233,16 @@ def find_top_similar_pairs(text, threshold=0.42, limit=5):
 def choose_best_pair(top_pairs):
     if not top_pairs:
         return None
-
     best_score, _, best_pair = top_pairs[0]
-
     if len(top_pairs) > 1:
         second_score, _, second_pair = top_pairs[1]
         if abs(best_score - second_score) < 0.05:
             ordered = sorted(
                 [best_pair, second_pair],
-                key=lambda p: (
-                    p.get("rating_up", 0) - p.get("rating_down", 0),
-                    len(p.get("answers", []))
-                ),
+                key=lambda p: (p.get("rating_up", 0) - p.get("rating_down", 0), len(p.get("answers", []))),
                 reverse=True
             )
             return ordered[0]
-
     return best_pair
 
 
@@ -269,20 +258,16 @@ def find_category_answer(text):
     categories = knowledge.get("categories", {})
     best_category = None
     best_hits = 0
-
     for _, category_data in categories.items():
-        keywords = category_data.get("keywords", [])
         hits = 0
-        for keyword in keywords:
+        for keyword in category_data.get("keywords", []):
             if normalize(keyword) in norm:
                 hits += 1
         if hits > best_hits:
             best_hits = hits
             best_category = category_data
-
     if best_category and best_category.get("answers"):
         return random.choice(best_category["answers"])
-
     return None
 
 
@@ -290,12 +275,7 @@ def fallback_answer(user_text):
     recent = get_recent_context()
     if recent:
         topics = " | ".join(item["user"] for item in recent)
-        return (
-            "Точного ответа нет. "
-            f"Недавний контекст: {topics}. "
-            "Либо уточни, либо обучи меня новой паре."
-        )
-
+        return f"Точного ответа нет. Недавний контекст: {topics}. Либо уточни, либо обучи меня новой паре."
     return random.choice([
         "Не понял нормально. Уточни или добавь обучение.",
         "В базе нет хорошего ответа на это.",
@@ -307,14 +287,12 @@ def fallback_answer(user_text):
 def auto_disable_bad_pairs():
     threshold = knowledge.get("settings", {}).get("auto_disable_threshold", 3)
     changed = False
-
     for pair in knowledge.get("custom_pairs", []):
         balance = pair.get("rating_down", 0) - pair.get("rating_up", 0)
         if balance >= threshold and pair.get("is_active", True):
             pair["is_active"] = False
             pair["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             changed = True
-
     if changed:
         persist_knowledge(with_backup=True)
 
@@ -328,20 +306,12 @@ def generate_reply(user_text):
 
     exact_pair = find_exact_custom_answer(user_text)
     if exact_pair:
-        return {
-            "reply": pick_answer_from_pair(exact_pair),
-            "source_type": "exact",
-            "pair_id": exact_pair["id"]
-        }
+        return {"reply": pick_answer_from_pair(exact_pair), "source_type": "exact", "pair_id": exact_pair["id"]}
 
     top_pairs = find_top_similar_pairs(user_text)
     best_pair = choose_best_pair(top_pairs)
     if best_pair:
-        return {
-            "reply": pick_answer_from_pair(best_pair),
-            "source_type": "similar",
-            "pair_id": best_pair["id"]
-        }
+        return {"reply": pick_answer_from_pair(best_pair), "source_type": "similar", "pair_id": best_pair["id"]}
 
     category_answer = find_category_answer(user_text)
     if category_answer:
@@ -355,24 +325,27 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/health")
+def health():
+    return {"status": "ok"}
+
+
 @app.route("/chat", methods=["POST"])
 def chat():
-    data = request.get_json()
-    user_message = data.get("message", "").strip()
-
+    data = request.get_json(silent=True) or {}
+    user_message = str(data.get("message", "")).strip()
     if not user_message:
         return jsonify({"reply": "Пустое сообщение — мусор. Напиши нормально."}), 400
 
     result = generate_reply(user_message)
     remember_dialog(user_message, result["reply"], result["source_type"], result["pair_id"])
-
     return jsonify(result)
 
 
 @app.route("/train", methods=["POST"])
 def train():
-    data = request.get_json()
-    question = data.get("question", "").strip()
+    data = request.get_json(silent=True) or {}
+    question = str(data.get("question", "")).strip()
     answers_raw = data.get("answers", [])
     tags_raw = data.get("tags", [])
 
@@ -381,13 +354,11 @@ def train():
 
     answers = [str(a).strip() for a in answers_raw if str(a).strip()]
     tags = [str(t).strip().lower() for t in tags_raw if str(t).strip()]
-
     if not answers:
         return jsonify({"status": "error", "message": "Ответы пустые."}), 400
 
     next_id = knowledge.get("last_id", 0) + 1
     knowledge["last_id"] = next_id
-
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     knowledge.setdefault("custom_pairs", []).append({
         "id": next_id,
@@ -400,30 +371,26 @@ def train():
         "created_at": now,
         "updated_at": now
     })
-
     persist_knowledge(with_backup=True)
-
-    return jsonify({
-        "status": "success",
-        "message": f"Добавлено обучение: {question}"
-    })
+    return jsonify({"status": "success", "message": f"Добавлено обучение: {question}"})
 
 
-@app.route("/history", methods=["GET"])
+@app.route("/history")
 def history():
     return jsonify({"dialog": dialog_memory})
 
 
-@app.route("/knowledge", methods=["GET"])
+@app.route("/knowledge")
 def get_knowledge():
     q = request.args.get("q", "").strip().lower()
     tag = request.args.get("tag", "").strip().lower()
 
     pairs = knowledge.get("custom_pairs", [])
-
     if q:
-        pairs = [p for p in pairs if q in p.get("question", "").lower() or any(q in a.lower() for a in p.get("answers", []))]
-
+        pairs = [
+            p for p in pairs
+            if q in p.get("question", "").lower() or any(q in a.lower() for a in p.get("answers", []))
+        ]
     if tag:
         pairs = [p for p in pairs if tag in [t.lower() for t in p.get("tags", [])]]
 
@@ -437,16 +404,14 @@ def get_knowledge():
 
 @app.route("/knowledge/delete", methods=["POST"])
 def delete_knowledge():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     pair_id = data.get("id")
-
     if pair_id is None:
         return jsonify({"status": "error", "message": "Нет id."}), 400
 
     before = len(knowledge.get("custom_pairs", []))
     knowledge["custom_pairs"] = [p for p in knowledge.get("custom_pairs", []) if p.get("id") != pair_id]
     after = len(knowledge.get("custom_pairs", []))
-
     if before == after:
         return jsonify({"status": "error", "message": "Запись не найдена."}), 404
 
@@ -456,7 +421,7 @@ def delete_knowledge():
 
 @app.route("/knowledge/update", methods=["POST"])
 def update_knowledge():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     pair_id = data.get("id")
     question = str(data.get("question", "")).strip()
     answers = data.get("answers", [])
@@ -484,7 +449,7 @@ def update_knowledge():
 
 @app.route("/rate", methods=["POST"])
 def rate_answer():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     pair_id = data.get("pair_id")
     vote = data.get("vote")
 
@@ -497,11 +462,9 @@ def rate_answer():
                 pair["rating_up"] = pair.get("rating_up", 0) + 1
             else:
                 pair["rating_down"] = pair.get("rating_down", 0) + 1
-
             pair["updated_at"] = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             persist_knowledge(with_backup=True)
             auto_disable_bad_pairs()
-
             return jsonify({
                 "status": "success",
                 "message": "Оценка сохранена.",
@@ -515,9 +478,8 @@ def rate_answer():
 
 @app.route("/knowledge/import", methods=["POST"])
 def import_knowledge():
-    data = request.get_json()
+    data = request.get_json(silent=True) or {}
     imported = data.get("custom_pairs")
-
     if not isinstance(imported, list):
         return jsonify({"status": "error", "message": "Нужен список custom_pairs."}), 400
 
@@ -529,19 +491,14 @@ def import_knowledge():
         question = str(item.get("question", "")).strip()
         answers = item.get("answers", [])
         tags = item.get("tags", [])
-
         if not question:
             continue
-
         if isinstance(answers, str):
             answers = [answers]
-
         answers = [str(a).strip() for a in answers if str(a).strip()]
         tags = [str(t).strip().lower() for t in tags if str(t).strip()]
-
         if not answers:
             continue
-
         last_id += 1
         knowledge.setdefault("custom_pairs", []).append({
             "id": last_id,
@@ -558,7 +515,6 @@ def import_knowledge():
 
     knowledge["last_id"] = last_id
     persist_knowledge(with_backup=True)
-
     return jsonify({"status": "success", "message": f"Импортировано: {count}"})
 
 
@@ -570,13 +526,14 @@ def create_backup():
     return jsonify({"status": "success", "message": "Резервная копия создана.", "path": path})
 
 
-@app.route("/backups", methods=["GET"])
+@app.route("/backups")
 def list_backups():
-    ensure_files()
+    ensure_dirs()
     files = sorted(os.listdir(BACKUP_DIR), reverse=True)
     return jsonify({"files": files})
 
 
 if __name__ == "__main__":
-    ensure_files()
-    app.run(debug=True)
+    ensure_dirs()
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
