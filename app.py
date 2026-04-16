@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 import json
 import os
 import random
@@ -13,7 +13,7 @@ MEMORY_FILE = os.path.join(BASE_DIR, "memory.json")
 DIALOG_FILE = os.path.join(BASE_DIR, "dialog_memory.json")
 BACKUP_DIR = os.path.join(BASE_DIR, "backups")
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, static_folder=None)
 
 
 def ensure_dirs():
@@ -322,7 +322,17 @@ def generate_reply(user_text):
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return send_from_directory(BASE_DIR, "index.html")
+
+
+@app.route("/style.css")
+def style_css():
+    return send_from_directory(BASE_DIR, "style.css", mimetype="text/css")
+
+
+@app.route("/script.js")
+def script_js():
+    return send_from_directory(BASE_DIR, "script.js", mimetype="application/javascript")
 
 
 @app.route("/health")
