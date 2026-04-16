@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>demo 0.1.4</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <h1>demo 0.1.4</h1>
+      <p class="muted">Локальный мини-ИИ</p>
+
+      <div class="block">
+        <h2>Обучение</h2>
+        <input id="trainQuestion" type="text" placeholder="Вопрос" />
+        <textarea id="trainAnswers" placeholder="Ответы, каждый с новой строки"></textarea>
+        <input id="trainTags" type="text" placeholder="Теги через запятую" />
+        <button id="trainBtn">Обучить</button>
+        <div id="trainStatus" class="status"></div>
+      </div>
+
+      <div class="block">
+        <h2>Импорт</h2>
+        <textarea id="importData" placeholder='[{"question":"привет","answers":["здорово"],"tags":["greeting"]}]'></textarea>
+        <button id="importBtn">Импортировать</button>
+      </div>
+
+      <div class="block">
+        <h2>Резервная копия</h2>
+        <button id="backupBtn">Создать backup</button>
+        <div id="backupStatus" class="status"></div>
+      </div>
+
+      <div class="block">
+        <h2>Команды</h2>
+        <ul>
+          <li><code>Меня зовут Нурсултан</code></li>
+          <li><code>Как меня зовут</code></li>
+          <li><code>Запомни что люблю Python</code></li>
+          <li><code>Что ты помнишь</code></li>
+          <li><code>Очистить память</code></li>
+          <li><code>Очистить диалог</code></li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="main-panel">
+      <section class="chat-panel">
+        <div id="chatBox" class="chat-box"></div>
+
+        <form id="chatForm" class="chat-form">
+          <input id="messageInput" type="text" placeholder="Напиши сообщение..." autocomplete="off" />
+          <button type="submit">Отправить</button>
+        </form>
+      </section>
+
+      <section class="knowledge-panel">
+        <div class="knowledge-header">
+          <h2>База знаний</h2>
+          <button id="refreshKnowledgeBtn">Обновить</button>
+        </div>
+
+        <div class="filters">
+          <input id="searchInput" type="text" placeholder="Поиск по базе..." />
+          <input id="tagInput" type="text" placeholder="Фильтр по тегу..." />
+        </div>
+
+        <div id="knowledgeList" class="knowledge-list"></div>
+
+        <div class="block">
+          <h2>Backups</h2>
+          <div id="backupsList" class="backup-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="editModal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Редактирование пары</h2>
+      <input id="editId" type="hidden" />
+      <input id="editQuestion" type="text" placeholder="Вопрос" />
+      <textarea id="editAnswers" placeholder="Ответы, каждый с новой строки"></textarea>
+      <input id="editTags" type="text" placeholder="Теги через запятую" />
+      <label class="check-row">
+        <input id="editActive" type="checkbox" checked />
+        <span>Активно</span>
+      </label>
+
+      <div class="modal-actions">
+        <button id="saveEditBtn">Сохранить</button>
+        <button id="closeEditBtn" class="danger">Закрыть</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
